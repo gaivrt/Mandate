@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iztro 紫微斗數排盤 Demo (優化流曜顯示)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/iztro/dist/iztro.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+        }
+        .container {
+            max-width: 1200px; 
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #ffffff; /* White */
+            border-radius: 0.75rem; /* Tailwind rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Tailwind shadow-lg */
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500; /* Tailwind font-medium */
+            color: #374151; /* Tailwind gray-700 */
+        }
+        input[type="date"], input[type="text"], select, button {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #d1d5db; /* Tailwind gray-300 */
+            border-radius: 0.375rem; /* Tailwind rounded-md */
+            box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input[type="date"]:focus, input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6; /* Tailwind blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); /* Tailwind ring-blue-200 */
+        }
+        button {
+            background-color: #3b82f6; /* Tailwind blue-500 */
+            color: white;
+            font-weight: 600; /* Tailwind font-semibold */
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2563eb; /* Tailwind blue-600 */
+        }
+        .section-title {
+            font-size: 1.5rem; /* Tailwind text-2xl */
+            font-weight: 700; /* Tailwind font-bold */
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #1f2937; /* Tailwind gray-800 */
+            border-bottom: 2px solid #e5e7eb; /* Tailwind gray-200 */
+            padding-bottom: 0.5rem;
+        }
+        .error-message {
+            color: #ef4444; /* Tailwind red-500 */
+            background-color: #fee2e2; /* Tailwind red-100 */
+            border: 1px solid #fca5a5; /* Tailwind red-300 */
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            margin-top: 1rem;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem; /* Tailwind gap-5 */
+            margin-bottom: 1.5rem;
+        }
+        .info-item {
+            background-color: #f9fafb; /* Tailwind gray-50 */
+            padding: 1rem;
+            border-radius: 0.5rem; /* Tailwind rounded-lg */
+            border: 1px solid #e5e7eb; /* Tailwind gray-200 */
+        }
+        .info-item-title {
+            font-weight: 600;
+            color: #111827; /* Tailwind gray-900 */
+            margin-bottom: 0.25rem;
+        }
+        .info-item-value {
+            color: #4b5563; /* Tailwind gray-600 */
+            font-size: 0.875rem; /* Tailwind text-sm */
+            word-break: break-all;
+        }
+        .palace-grid-container { 
+            border: 2px solid #60a5fa; /* Tailwind blue-400 */
+            border-radius: 0.5rem;
+            padding: 1rem;
+            background-color: #eff6ff; /* Tailwind blue-50 */
+        }
+        .palace-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr)); 
+            gap: 0.75rem; /* Tailwind gap-3 */
+        }
+        .palace-card {
+            background-color: #ffffff; 
+            border: 1px solid #d1d5db; 
+            border-radius: 0.375rem; 
+            padding: 0.75rem; 
+            min-height: 180px; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .palace-title {
+            font-size: 1rem; 
+            font-weight: 700; 
+            color: #1e3a8a; 
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .palace-card .stars-list {
+            font-size: 0.75rem; 
+        }
+        .palace-card .stars-list li {
+            padding: 0.125rem 0.375rem; 
+            margin-right: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+        .palace-details {
+            font-size: 0.7rem; 
+            color: #4b5563; 
+            margin-top: auto; 
+            text-align: center;
+        }
+        .palace-details p {
+            margin-bottom: 0.1rem;
+        }
+
+        details {
+            background-color: #f9fafb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+        }
+        summary {
+            font-weight: 600;
+            cursor: pointer;
+            color: #1f2937;
+        }
+        .horoscope-details-item { /* For individual items in horoscope structured text */
+             margin-top: 0.25rem;
+        }
+        .horoscope-stars-by-palace {
+            margin-top: 0.5rem;
+            padding-left: 1rem;
+        }
+        .horoscope-stars-by-palace > li {
+            margin-bottom: 0.25rem;
+        }
+
+        .analysis-item {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: #f0f9ff;
+            border-radius: 0.375rem;
+            border: 1px solid #bae6fd;
+        }
+        .cdn-warning {
+            font-size: 0.8rem;
+            color: #7f1d1d;
+            background-color: #fef2f2;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            margin-top: 0.5rem;
+            border: 1px solid #fecaca;
+        }
+        .important-note {
+            background-color: #fffbeb; 
+            color: #b45309; 
+            padding: 1rem;
+            border-radius: 0.5rem; 
+            margin-bottom: 1.5rem;
+            border: 1px solid #fde68a; 
+        }
+        pre.raw-json { 
+            background-color: #1f2937; 
+            color: #f3f4f6; 
+            padding: 1rem;
+            border-radius: 0.375rem; 
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">紫微斗數星盤 Demo (優化流曜顯示)</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+                <label for="solarDate">陽曆生日:</label>
+                <input type="date" id="solarDate" value="1990-01-01">
+            </div>
+            <div>
+                <label for="timeIndex">出生時辰:</label>
+                <select id="timeIndex">
+                    <option value="0">早子時 (00:00 - 00:59)</option>
+                    <option value="1">丑時 (01:00 - 02:59)</option>
+                    <option value="2">寅時 (03:00 - 04:59)</option>
+                    <option value="3">卯時 (05:00 - 06:59)</option>
+                    <option value="4">辰時 (07:00 - 08:59)</option>
+                    <option value="5">巳時 (09:00 - 10:59)</option>
+                    <option value="6" selected>午時 (11:00 - 12:59)</option>
+                    <option value="7">未時 (13:00 - 14:59)</option>
+                    <option value="8">申時 (15:00 - 16:59)</option>
+                    <option value="9">酉時 (17:00 - 18:59)</option>
+                    <option value="10">戌時 (19:00 - 20:59)</option>
+                    <option value="11">亥時 (21:00 - 22:59)</option>
+                    <option value="12">晚子時 (23:00 - 23:59)</option>
+                </select>
+            </div>
+            <div>
+                <label for="gender">性別:</label>
+                <select id="gender">
+                    <option value="男">男</option>
+                    <option value="女">女</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="calculateAstrolabe()" class="w-full">計算星盤</button>
+
+        <div id="resultTitle" class="section-title" style="display:none;">星盤資料</div>
+        <div id="result" class="mt-4"></div>
+        <div id="errorMessage" class="error-message" style="display:none;"></div>
+    </div>
+
+    <script>
+        let currentAstrolabeData = null; 
+
+        if (typeof iztro === 'undefined' || typeof iztro.astro === 'undefined') {
+            const errorDiv = document.getElementById('errorMessage');
+            if (errorDiv) { 
+                errorDiv.textContent = '錯誤：iztro 庫未能成功加載，請檢查網絡連接或 CDN 連結。';
+                errorDiv.style.display = 'block';
+            } else {
+                console.error('Error: iztro library not loaded and error message div not found.');
+            }
+        }
+
+        function createInfoItem(title, value, isObject = false) {
+            const displayValue = isObject ? JSON.stringify(value, null, 2) : (value || '-');
+            return `
+                <div class="info-item">
+                    <p class="info-item-title">${title}:</p>
+                    <p class="info-item-value">${isObject ? `<pre class="bg-white p-2 rounded text-xs">${displayValue}</pre>` : displayValue}</p>
+                </div>
+            `;
+        }
+
+        function formatStars(starsArray) {
+            if (!starsArray || starsArray.length === 0) {
+                return '<li>無</li>';
+            }
+            return starsArray.map(star => {
+                let starDisplay = star.name || '未知星曜';
+                if (star.mutagen) {
+                    starDisplay += ` <span class="mutagen">(${star.mutagen})</span>`;
+                }
+                if (star.brightness) {
+                    starDisplay += ` <span class="star-brightness">[${star.brightness}]</span>`;
+                }
+                return `<li>${starDisplay}</li>`;
+            }).join('');
+        }
+
+        function calculateAstrolabe() {
+            const solarDateStr = document.getElementById('solarDate').value;
+            const timeIndex = parseInt(document.getElementById('timeIndex').value);
+            const gender = document.getElementById('gender').value;
+            const resultDiv = document.getElementById('result');
+            const resultTitleDiv = document.getElementById('resultTitle');
+            const errorDiv = document.getElementById('errorMessage');
+
+            resultDiv.innerHTML = '';
+            resultTitleDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+
+            if (!solarDateStr) {
+                errorDiv.textContent = '請選擇陽曆生日。';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                if (typeof iztro === 'undefined' || typeof iztro.astro === 'undefined' || typeof iztro.astro.bySolar !== 'function') {
+                     errorDiv.textContent = 'iztro 庫或其核心功能未能正確初始化。';
+                     errorDiv.style.display = 'block';
+                     return;
+                }
+
+                currentAstrolabeData = iztro.astro.bySolar(solarDateStr, timeIndex, gender, true, 'zh-TW');
+                resultTitleDiv.style.display = 'block';
+
+                let basicInfoHtml = '<h2 class="text-xl font-semibold mb-3 text-gray-700">基本資料（中宮資訊）</h2><div class="info-grid">';
+                basicInfoHtml += createInfoItem('性別', currentAstrolabeData.gender);
+                basicInfoHtml += createInfoItem('陽曆生日', currentAstrolabeData.solarDate);
+                basicInfoHtml += createInfoItem('農曆生日', currentAstrolabeData.lunarDate);
+                basicInfoHtml += createInfoItem('四柱 (干支)', currentAstrolabeData.chineseDate);
+                basicInfoHtml += createInfoItem('時辰', `${currentAstrolabeData.time} (${currentAstrolabeData.timeRange})`);
+                basicInfoHtml += createInfoItem('生肖', currentAstrolabeData.zodiac);
+                basicInfoHtml += createInfoItem('星座', currentAstrolabeData.sign);
+                basicInfoHtml += createInfoItem('命主', currentAstrolabeData.soul);
+                basicInfoHtml += createInfoItem('身主', currentAstrolabeData.body);
+                basicInfoHtml += createInfoItem('五行局', currentAstrolabeData.fiveElementsClass);
+                basicInfoHtml += '</div>';
+                resultDiv.innerHTML += basicInfoHtml;
+
+                const palaceOrderIndices = [3, 4, 5, 6, 2, 1, 0, 7, 11, 10, 9, 8]; 
+
+                let palacesHtml = '<h2 class="text-xl font-semibold mt-6 mb-3 text-gray-700">十二宮垣 (4x3 網格)</h2><div class="palace-grid-container"><div class="palace-grid">';
+                palaceOrderIndices.forEach(index => {
+                    const palace = currentAstrolabeData.palaces[index];
+                    if (palace) { 
+                        palacesHtml += `
+                            <div class="palace-card">
+                                <h3 class="palace-title">${palace.name} (${palace.heavenlyStem}${palace.earthlyBranch}) ${palace.isBodyPalace ? '<span class="text-xs text-red-500">(身)</span>' : ''} ${palace.isOriginalPalace ? '<span class="text-xs text-purple-500">(來因)</span>' : ''}</h3>
+                                <div><ul class="stars-list">${formatStars(palace.majorStars)}</ul></div>
+                                <div><ul class="stars-list !text-xs">${formatStars(palace.minorStars)}</ul></div>
+                                <div><ul class="stars-list !text-xs">${formatStars(palace.adjectiveStars)}</ul></div>
+                                <div class="palace-details">
+                                    <p>${palace.changsheng12 || '-'}/${palace.boshi12 || '-'}</p>
+                                    <p>${palace.jiangqian12 || '-'}/${palace.suiqian12 || '-'}</p>
+                                    <p>大限: ${palace.decadal.range.join('-')}</p>
+                                    <p>小限: ${palace.ages[0] || '-'}</p>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        palacesHtml += `<div class="palace-card"></div>`; 
+                    }
+                });
+                palacesHtml += '</div></div>';
+                resultDiv.innerHTML += palacesHtml;
+                
+                let rawJsonHtml = `
+                    <details class="mt-6">
+                        <summary class="text-lg font-semibold">原始星盤 JSON 數據 (Raw Astrolabe JSON Data)</summary>
+                        <div class="p-4">
+                            <pre id="rawJsonOutput" class="raw-json"></pre>
+                        </div>
+                    </details>
+                `;
+                resultDiv.innerHTML += rawJsonHtml;
+                document.getElementById('rawJsonOutput').textContent = JSON.stringify(currentAstrolabeData, null, 2);
+
+                resultDiv.innerHTML += `
+                    <details class="mt-6">
+                        <summary class="section-title !border-b-0 !pb-0 !mb-2">動態運限資料 (Horoscope Data)</summary>
+                        <div class="p-4">
+                            <label for="horoscopeDate" class="mt-2">選擇查詢日期:</label>
+                            <input type="date" id="horoscopeDate" class="mb-2">
+                            <button onclick="showHoroscopeData()" class="bg-green-500 hover:bg-green-600">查詢運限</button>
+                            <div id="horoscopeResult" class="mt-4">
+                                <pre id="horoscopeJsonOutput" class="raw-json" style="display:none;"></pre>
+                                <div id="horoscopeStructuredOutput"></div> 
+                            </div>
+                        </div>
+                    </details>
+                `;
+                document.getElementById('horoscopeDate').valueAsDate = new Date();
+
+                let advancedAnalysisHtml = `
+                    <details class="mt-6">
+                        <summary class="section-title !border-b-0 !pb-0 !mb-2">進階分析功能 (Advanced Analysis)</summary>
+                        <div class="p-4">
+                            <div class="important-note">
+                                <p class="font-semibold">注意：</p>
+                                <p class="text-sm">以下進階分析功能依賴 \`iztro\` 庫物件實例上的特定方法。若您透過 CDN (<code>iztro.min.js</code>) 使用此 Demo，這些方法可能無法如預期般運作或未被完整支援。為獲得完整功能，建議將 \`iztro\` 整合至 Node.js 專案或使用模組打包工具 (如 Webpack, Vite)。</p>
+                            </div>
+                `;
+                advancedAnalysisHtml += `
+                    <div class="analysis-item">
+                        <h4 class="text-lg font-semibold mb-2 text-gray-700">查詢宮位三方四正</h4>
+                        <label for="selectPalaceForSurrounded">選擇宮位:</label>
+                        <select id="selectPalaceForSurrounded" class="mb-2">
+                            ${currentAstrolabeData.palaces.map(p => `<option value="${p.name}">${p.name} (${p.heavenlyStem}${p.earthlyBranch})</option>`).join('')}
+                        </select>
+                        <button onclick="showSurroundedPalaces()">查詢三方四正</button>
+                        <div id="surroundedPalacesResult" class="mt-2 text-sm"></div>
+                    </div>
+                `;
+                advancedAnalysisHtml += `
+                    <div class="analysis-item">
+                        <h4 class="text-lg font-semibold mb-2 text-gray-700">查詢星曜所在宮位</h4>
+                        <label for="starNameToFind">輸入星曜名稱 (例如: 紫微, 天機):</label>
+                        <input type="text" id="starNameToFind" placeholder="例如: 紫微" class="mb-2">
+                        <button onclick="findStarPalace()">查詢星曜宮位</button>
+                        <div id="starPalaceResult" class="mt-2 text-sm"></div>
+                    </div>
+                `;
+                const heavenlyStems = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+                advancedAnalysisHtml += `
+                    <div class="analysis-item">
+                        <h4 class="text-lg font-semibold mb-2 text-gray-700">依天干查詢四化</h4>
+                        <label for="selectHeavenlyStemForMutagens">選擇天干:</label>
+                        <select id="selectHeavenlyStemForMutagens" class="mb-2">
+                            ${heavenlyStems.map(stem => `<option value="${stem}">${stem}</option>`).join('')}
+                        </select>
+                        <button onclick="showMutagensByStem()">查詢四化</button>
+                        <div id="mutagensByStemResult" class="mt-2 text-sm"></div>
+                    </div>
+                `;
+                advancedAnalysisHtml += `
+                    <div class="analysis-item">
+                        <h4 class="text-lg font-semibold mb-2 text-gray-700">查詢宮位飛星</h4>
+                        <label for="selectPalaceForFlyingStars">選擇宮位:</label>
+                        <select id="selectPalaceForFlyingStars" class="mb-2">
+                             ${currentAstrolabeData.palaces.map(p => `<option value="${p.name}">${p.name} (${p.heavenlyStem}${p.earthlyBranch})</option>`).join('')}
+                        </select>
+                        <button onclick="showFlyingStars()">查詢飛星</button>
+                        <div id="flyingStarsResult" class="mt-2 text-sm"></div>
+                    </div>
+                `;
+                advancedAnalysisHtml += '</div></details>';
+                resultDiv.innerHTML += advancedAnalysisHtml;
+
+            } catch (e) {
+                console.error("排盤時發生錯誤:", e);
+                resultDiv.innerHTML = '';
+                errorDiv.textContent = '排盤時發生錯誤：' + e.message + '。請檢查輸入或查看控制台獲取更多資訊。';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        function showHoroscopeData() {
+            const horoscopeDateStr = document.getElementById('horoscopeDate').value;
+            const horoscopeResultDiv = document.getElementById('horoscopeResult'); // Container for all horoscope output
+            const horoscopeJsonOutputPre = document.getElementById('horoscopeJsonOutput');
+            const horoscopeStructuredOutputDiv = document.getElementById('horoscopeStructuredOutput'); // New div for structured text
+
+            // Clear previous outputs
+            if(horoscopeStructuredOutputDiv) horoscopeStructuredOutputDiv.innerHTML = ''; // Clear structured text
+            horoscopeJsonOutputPre.textContent = '';
+            horoscopeJsonOutputPre.style.display = 'none';
+
+
+            if (!currentAstrolabeData) {
+                horoscopeJsonOutputPre.textContent = '請先計算基本星盤。';
+                horoscopeJsonOutputPre.style.display = 'block';
+                return;
+            }
+            if (!horoscopeDateStr) {
+                horoscopeJsonOutputPre.textContent = '請選擇運限查詢日期。';
+                horoscopeJsonOutputPre.style.display = 'block';
+                return;
+            }
+
+            try {
+                const horoscopeData = currentAstrolabeData.horoscope(horoscopeDateStr); 
+                
+                horoscopeJsonOutputPre.textContent = JSON.stringify(horoscopeData, null, 2);
+                horoscopeJsonOutputPre.style.display = 'block';
+                
+                // Structured text output (optional, can be removed if JSON is preferred)
+                let html = '<h3 class="text-md font-semibold mb-2 text-gray-700 mt-4">運限盤資料 (結構化摘要)</h3>';
+                html += `<p class="text-sm horoscope-details-item">查詢日期: ${horoscopeData.solarDate} (農曆 ${horoscopeData.lunarDate})</p>`;
+
+                const processHoroscopeType = (type, data) => {
+                    if (!data) return '';
+                    let sectionHtml = `<div class="mt-2 p-2 border border-dashed border-gray-300 rounded"><p class="font-semibold text-sm text-blue-600">${type}:</p>`;
+                    const palaceName = data.palaceName || (data.palaceNames && data.palaceNames.length > 0 ? data.palaceNames[0] : '未知');
+                    sectionHtml += `<p class="text-xs horoscope-details-item">命宮: ${palaceName} (${data.heavenlyStem}${data.earthlyBranch})</p>`;
+                    const mutagens = data.mutagens || data.mutagen || [];
+                    sectionHtml += `<p class="text-xs horoscope-details-item">四化: ${mutagens.length > 0 ? mutagens.map((m, i) => ['祿','權','科','忌'][i] + '-' + m).join(', ') : '無'}</p>`;
+                    
+                    // Optimized Horoscope Stars Display
+                    if (data.stars && Array.isArray(data.stars)) {
+                        let starsHtml = '<p class="text-xs horoscope-details-item">流曜:</p><ul class="list-none pl-4 text-xs horoscope-stars-by-palace">';
+                        let hasAnyHoroscopeStar = false;
+                        data.stars.forEach((starsInPalace, palaceIdx) => {
+                            if (starsInPalace && starsInPalace.length > 0) {
+                                const originalPalace = currentAstrolabeData.palaces[palaceIdx];
+                                if (originalPalace) {
+                                    hasAnyHoroscopeStar = true;
+                                    starsHtml += `<li><strong>${originalPalace.name} (${originalPalace.heavenlyStem}${originalPalace.earthlyBranch}):</strong> <ul class="stars-list !gap-1 !my-1 !inline-flex">${formatStars(starsInPalace)}</ul></li>`;
+                                }
+                            }
+                        });
+                        if (!hasAnyHoroscopeStar) {
+                            starsHtml += '<li>無流曜</li>';
+                        }
+                        starsHtml += '</ul>';
+                        sectionHtml += starsHtml;
+                    }
+
+                     if (data.age) { 
+                        sectionHtml += `<p class="text-xs horoscope-details-item">歲數: ${data.age.nominalAge} (${data.age.index +1}運)</p>`;
+                    }
+                    sectionHtml += '</div>';
+                    return sectionHtml;
+                };
+
+                html += processHoroscopeType('大限 (Decadal)', horoscopeData.decadal);
+                html += processHoroscopeType('流年 (Yearly)', horoscopeData.yearly);
+                html += processHoroscopeType('流月 (Monthly)', horoscopeData.monthly);
+                html += processHoroscopeType('流日 (Daily)', horoscopeData.daily);
+                html += processHoroscopeType('流時 (Hourly)', horoscopeData.hourly);
+                
+                if(horoscopeStructuredOutputDiv) horoscopeStructuredOutputDiv.innerHTML = html;
+
+
+            } catch (e) {
+                console.error("查詢運限時發生錯誤:", e);
+                horoscopeJsonOutputPre.textContent = `查詢運限錯誤: ${e.message}`;
+                horoscopeJsonOutputPre.style.display = 'block';
+                if(horoscopeStructuredOutputDiv) horoscopeStructuredOutputDiv.innerHTML = `<p class="text-red-500">查詢運限錯誤: ${e.message}</p>`;
+            }
+        }
+
+        function showSurroundedPalaces() {
+            const selectedPalaceName = document.getElementById('selectPalaceForSurrounded').value;
+            const resultDiv = document.getElementById('surroundedPalacesResult');
+            resultDiv.innerHTML = '';
+
+            if (!currentAstrolabeData) {
+                resultDiv.innerHTML = '<p class="text-red-500">請先計算基本星盤。</p>';
+                return;
+            }
+            try {
+                const palace = currentAstrolabeData.palace(selectedPalaceName);
+                if (!palace || typeof palace.surroundedPalaces !== 'function') {
+                    resultDiv.innerHTML = '<p class="cdn-warning">錯誤: <code>palace.surroundedPalaces</code> 不是一個有效函數或宮位物件不存在。此功能可能在目前的 CDN 版本中無法使用。</p>';
+                    return;
+                }
+                const surrounded = palace.surroundedPalaces();
+                if (surrounded && surrounded.length === 3 && surrounded.every(p => p && p.name && p.heavenlyStem && p.earthlyBranch)) {
+                    resultDiv.innerHTML = `
+                        <p><strong>${selectedPalaceName}</strong> 的三方四正為:</p>
+                        <ul class="list-disc list-inside ml-4">
+                            <li>三合 - 財帛宮位: ${surrounded[0].name} (${surrounded[0].heavenlyStem}${surrounded[0].earthlyBranch})</li>
+                            <li>三合 - 官祿宮位: ${surrounded[1].name} (${surrounded[1].heavenlyStem}${surrounded[1].earthlyBranch})</li>
+                            <li>對宮 - 遷移宮位: ${surrounded[2].name} (${surrounded[2].heavenlyStem}${surrounded[2].earthlyBranch})</li>
+                        </ul>
+                    `;
+                } else {
+                    resultDiv.innerHTML = '<p class="text-orange-500">查詢三方四正時返回的資料結構不完整。</p>';
+                }
+            } catch (e) {
+                 resultDiv.innerHTML = `<p class="text-red-500">查詢三方四正錯誤: ${e.message}</p><p class="cdn-warning">提示：此錯誤可能是因為 <code>palace.surroundedPalaces</code> 方法在 CDN 版本中不可用或行為不同。</p>`;
+            }
+        }
+
+        function findStarPalace() {
+            const starName = document.getElementById('starNameToFind').value;
+            const resultDiv = document.getElementById('starPalaceResult');
+            resultDiv.innerHTML = '';
+
+            if (!currentAstrolabeData) {
+                resultDiv.innerHTML = '<p class="text-red-500">請先計算基本星盤。</p>';
+                return;
+            }
+            if (!starName) {
+                resultDiv.innerHTML = '<p class="text-red-500">請輸入星曜名稱。</p>';
+                return;
+            }
+            try {
+                const starInstance = currentAstrolabeData.star(starName);
+                if (starInstance && starInstance.palace && starInstance.palace.name && starInstance.palace.heavenlyStem && starInstance.palace.earthlyBranch) {
+                     const p = starInstance.palace;
+                     resultDiv.innerHTML = `<p>星曜 <strong>${starName}</strong> 位於: <strong>${p.name}</strong> (${p.heavenlyStem}${p.earthlyBranch})</p>`;
+                } else {
+                     resultDiv.innerHTML = `<p>找不到星曜 <strong>${starName}</strong> 或其宮位資訊不完整。</p>`;
+                }
+            } catch (e) {
+                 resultDiv.innerHTML = `<p class="text-red-500">查詢星曜宮位錯誤: ${e.message}</p>`;
+            }
+        }
+
+        function showMutagensByStem() {
+            const stemName = document.getElementById('selectHeavenlyStemForMutagens').value;
+            const resultDiv = document.getElementById('mutagensByStemResult');
+            resultDiv.innerHTML = '';
+             if (!currentAstrolabeData) {
+                resultDiv.innerHTML = '<p class="text-red-500">請先計算基本星盤。</p>';
+                return;
+            }
+            try {
+                let mutagens;
+                if (typeof currentAstrolabeData.getFourMutagenStars === 'function') {
+                    mutagens = currentAstrolabeData.getFourMutagenStars(stemName);
+                } else if (typeof iztro.astro.getFourMutagenStarsByHeavenlyStem === 'function') { 
+                    mutagens = iztro.astro.getFourMutagenStarsByHeavenlyStem(stemName);
+                } else  if (iztro.astro.HEAVENLY_STEMS_MUTAGENS && iztro.astro.HEAVENLY_STEMS_MUTAGENS[stemName]) { 
+                    const starKeys = iztro.astro.HEAVENLY_STEMS_MUTAGENS[stemName];
+                     if (typeof iztro.util !== 'undefined' && typeof iztro.util.t === 'function') {
+                        mutagens = starKeys.map(key => iztro.util.t(key));
+                    } else {
+                         resultDiv.innerHTML = '<p class="cdn-warning">錯誤: <code>iztro.util.t</code> 方法無法找到，無法翻譯四化星曜名稱。</p>';
+                        return;
+                    }
+                }
+                else {
+                    resultDiv.innerHTML = '<p class="cdn-warning">錯誤: <code>getFourMutagenStars</code> 方法無法找到。此功能可能在目前的 CDN 版本中無法使用。</p>';
+                    return;
+                }
+                
+                resultDiv.innerHTML = `
+                    <p>天干 <strong>${stemName}</strong> 的四化星為:</p>
+                    <ul class="list-disc list-inside ml-4">
+                        <li>化祿: ${mutagens[0] || '無'}</li>
+                        <li>化權: ${mutagens[1] || '無'}</li>
+                        <li>化科: ${mutagens[2] || '無'}</li>
+                        <li>化忌: ${mutagens[3] || '無'}</li>
+                    </ul>
+                `;
+            } catch (e) {
+                resultDiv.innerHTML = `<p class="text-red-500">查詢四化錯誤: ${e.message}</p><p class="cdn-warning">提示：此錯誤可能是因為相關方法在 CDN 版本中不可用或行為不同。</p>`;
+            }
+        }
+
+        function showFlyingStars() {
+            const palaceName = document.getElementById('selectPalaceForFlyingStars').value;
+            const resultDiv = document.getElementById('flyingStarsResult');
+            resultDiv.innerHTML = '';
+
+            if (!currentAstrolabeData) {
+                resultDiv.innerHTML = '<p class="text-red-500">請先計算基本星盤。</p>';
+                return;
+            }
+            try {
+                const palace = currentAstrolabeData.palace(palaceName);
+                if (!palace || typeof palace.getFlyingStars !== 'function') {
+                    resultDiv.innerHTML = '<p class="cdn-warning">錯誤: <code>palace.getFlyingStars</code> 不是一個有效函數或宮位物件不存在。此功能可能在目前的 CDN 版本中無法使用。</p>';
+                    return;
+                }
+                const flyingStars = palace.getFlyingStars();
+
+                if (flyingStars && flyingStars.length > 0) {
+                    let flyingHtml = `<p><strong>${palaceName}</strong> (${palace.heavenlyStem}${palace.earthlyBranch}) 的飛星情況:</p><ul class="list-disc list-inside ml-4">`;
+                    flyingStars.forEach(fs => {
+                        flyingHtml += `<li>飛化${fs.mutagen} 至 ${fs.palaceName}</li>`;
+                    });
+                    flyingHtml += '</ul>';
+                    resultDiv.innerHTML = flyingHtml;
+                } else {
+                    resultDiv.innerHTML = `<p><strong>${palaceName}</strong> 沒有產生飛星或無法獲取飛星資訊。</p>`;
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `<p class="text-red-500">查詢飛星錯誤: ${e.message}</p><p class="cdn-warning">提示：此錯誤可能是因為 <code>palace.getFlyingStars</code> 方法在 CDN 版本中不可用或行為不同。</p>`;
+            }
+        }
+
+        window.onload = function() {
+             // document.getElementById('solarDate').value = '2004-05-11'; // For quick testing
+        };
+    </script>
+</body>
+</html> 
